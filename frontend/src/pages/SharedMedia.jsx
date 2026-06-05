@@ -185,7 +185,7 @@ export default function SharedMedia(){
           </p>
 
           <a
-            href={`http://localhost:5000/api/download/${media._id}`}
+            href={`${import.meta.env.VITE_API_URL}/download/${media._id}`}
             target="_blank"
             rel="noreferrer"
             style={{

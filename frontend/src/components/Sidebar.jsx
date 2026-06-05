@@ -33,9 +33,11 @@ function SectionLabel({ label }) {
   );
 }
 
-function NavLink({ to, label, icon, active }) {
+function NavLink({ to, label, icon, active, onClick }) {
   return (
-    <Link to={to}
+    <Link
+      to={to}
+      onClick={onClick}
       style={{ display: "flex", alignItems: "center", gap: "11px", padding: "9px 14px", borderRadius: "10px", textDecoration: "none", fontSize: "13.5px", fontWeight: active ? 600 : 400, color: active ? "#f59e0b" : "#64748b", background: active ? "rgba(245,158,11,0.1)" : "transparent", border: active ? "1px solid rgba(245,158,11,0.18)" : "1px solid transparent", transition: "all 0.17s ease" }}
       onMouseEnter={e => { if (!active) { e.currentTarget.style.background = "rgba(255,255,255,0.04)"; e.currentTarget.style.color = "#e2e8f0"; } }}
       onMouseLeave={e => { if (!active) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#64748b"; } }}
@@ -46,7 +48,7 @@ function NavLink({ to, label, icon, active }) {
   );
 }
 
-export default function Sidebar() {
+export default function Sidebar({ onNavigate }) {
   const user = JSON.parse(localStorage.getItem("user"));
   const role = user?.role;
   const location = useLocation();
@@ -59,17 +61,13 @@ export default function Sidebar() {
     <aside style={{
       width: "256px",
       minWidth: "256px",
-      background: "rgba(10,16,28,0.96)",
-      minHeight: "100vh",
+      background: "rgba(10,16,28,0.98)",
+      height: "100vh",
       borderRight: "1px solid rgba(255,255,255,0.05)",
       padding: "24px 14px",
       display: "flex",
       flexDirection: "column",
-      position: "sticky",
-      top: 0,
-      height: "100vh",
       overflowY: "auto",
-      flexShrink: 0,
     }}>
       {/* Logo */}
       <div style={{ padding: "4px 14px 24px" }}>
@@ -82,29 +80,28 @@ export default function Sidebar() {
 
       <div style={{ height: "1px", background: "rgba(255,255,255,0.05)", marginBottom: "10px" }} />
 
-      {/* Nav */}
       <nav style={{ display: "flex", flexDirection: "column", gap: "1px", flex: 1 }}>
         <SectionLabel label="General" />
-        {NAV.always.map(item => <NavLink key={item.to} {...item} active={path === item.to} />)}
+        {NAV.always.map(item => <NavLink key={item.to} {...item} active={path === item.to} onClick={onNavigate} />)}
 
         {isMemberViewer && (
           <>
             <SectionLabel label="My Content" />
-            {NAV.memberViewer.map(item => <NavLink key={item.to} {...item} active={path === item.to} />)}
+            {NAV.memberViewer.map(item => <NavLink key={item.to} {...item} active={path === item.to} onClick={onNavigate} />)}
           </>
         )}
 
         {isPhotographerAdmin && (
           <>
             <SectionLabel label="Content" />
-            {NAV.photographerAdmin.map(item => <NavLink key={item.to} {...item} active={path === item.to} />)}
+            {NAV.photographerAdmin.map(item => <NavLink key={item.to} {...item} active={path === item.to} onClick={onNavigate} />)}
           </>
         )}
 
         {role === "admin" && (
           <>
             <SectionLabel label="Admin" />
-            {NAV.adminOnly.map(item => <NavLink key={item.to} {...item} active={path === item.to} />)}
+            {NAV.adminOnly.map(item => <NavLink key={item.to} {...item} active={path === item.to} onClick={onNavigate} />)}
           </>
         )}
       </nav>

@@ -549,7 +549,7 @@ export default function Gallery(){
                         }
 
                         <a
-                          href={`https://events-media-platform-backend.onrender.com/${item._id}`}
+                          href={`${import.meta.env.VITE_API_URL}/download/${item._id}`}
                           target="_blank"
                           rel="noreferrer"
                           style={{
