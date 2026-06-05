@@ -1,0 +1,26 @@
+node_modules/
+.env
+uploads/
+# Node
+node_modules/
+dist/
+
+# Environment
+.env
+
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# DeepFace
+.deepface/
+
+# Uploads
+uploads/
+
+# Vite
+frontend/dist/
+
+# Logs
+*.log

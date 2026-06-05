@@ -1,0 +1,29 @@
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+}
+
+body{
+  background:#0f172a;
+  color:white;
+  font-family:
+  Inter,
+  system-ui,
+  sans-serif;
+}
+
+a{
+  text-decoration:none;
+  color:inherit;
+}
+
+button{
+  cursor:pointer;
+}
+
+input,
+select,
+textarea{
+  outline:none;
+}
