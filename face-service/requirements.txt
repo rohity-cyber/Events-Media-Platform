@@ -1,0 +1,10 @@
+flask
+deepface
+requests
+gunicorn
+tensorflow
+tf-keras
+opencv-python-headless
+numpy
+pandas
+pillow
