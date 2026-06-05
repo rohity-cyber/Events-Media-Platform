@@ -549,7 +549,7 @@ export default function Gallery(){
                         }
 
                         <a
-                          href={`http://localhost:5000/api/download/${item._id}`}
+                          href={`https://events-media-platform-backend.onrender.com/${item._id}`}
                           target="_blank"
                           rel="noreferrer"
                           style={{
