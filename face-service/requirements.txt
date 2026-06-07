@@ -1,8 +1,7 @@
 flask
-deepface
+deepface==0.0.93
 requests
 gunicorn
-tensorflow-cpu
 tf-keras
 opencv-python-headless
 numpy
