@@ -2,7 +2,7 @@ flask
 deepface
 requests
 gunicorn
-tensorflow
+tensorflow-cpu
 tf-keras
 opencv-python-headless
 numpy
