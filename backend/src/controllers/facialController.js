@@ -1,160 +1,42 @@
-const axios =
-require("axios");
+exports.findMatchingPhotos = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
 
-const User =
-require("../models/User");
-
-const Media =
-require("../models/Media");
-
-exports.uploadReferenceSelfie =
-async(req,res)=>{
-
-  try{
-
-    const user =
-    await User.findById(
-      req.user._id
-    );
-
-    user.referenceSelfie =
-    req.file.path;
-
-    await user.save();
-
-    res.json({
-
-      message:
-      "Reference selfie uploaded",
-
-      path:
-      req.file.path
-
-    });
-
-  }catch(error){
-
-    res.status(500).json({
-
-      message:
-      error.message
-
-    });
-
-  }
-
-};
-
-exports.findMatchingPhotos =
-async(req,res)=>{
-
-  try{
-
-    const user =
-    await User.findById(
-      req.user._id
-    );
-
-    if(
-      !user.referenceSelfie
-    ){
-
-      return res
-      .status(400)
-      .json({
-
-        message:
-        "Upload reference selfie first"
-
-      });
-
+    if (!user.referenceSelfie) {
+      return res.status(400).json({ message: "Upload reference selfie first" });
     }
 
-    const media =
-    await Media.find({
-
-      mediaType:
-      "image"
-
-    });
-
+    const media = await Media.find({ mediaType: "image" });
     const matches = [];
 
-    for(
-      const photo
-      of media
-    ){
-
-      try{
-
-        const response =
-        await axios.post(
-
+    for (const photo of media) {
+      try {
+        const response = await axios.post(
           `${process.env.FACE_SERVICE_URL}/match`,
-
           {
-
-            referenceImage:
-            user.referenceSelfie,
-
-            targetImage:
-            photo.filePath
-
+            referenceImage: user.referenceSelfie,
+            targetImage: photo.filePath,
           },
-
           {
-
-            timeout:
-            120000
-
+            timeout: 60000  // ✅ reduced from 120s — fail faster
           }
-
         );
 
-        if(
-          response.data.match
-        ){
-
-          matches.push(
-            photo
-          );
-
+        if (response.data.match) {
+          matches.push(photo);
         }
 
-      }catch(error){
+        // ✅ small delay between requests so gunicorn isn't hammered
+        await new Promise(r => setTimeout(r, 200));
 
-        console.log(
-
-          "Face Match Error:",
-
-          photo._id,
-
-          error.message
-
-        );
-
+      } catch (error) {
+        console.log("Face Match Error:", photo._id, error.message);
       }
-
     }
 
-    res.json({
+    res.json({ count: matches.length, matches });
 
-      count:
-      matches.length,
-
-      matches
-
-    });
-
-  }catch(error){
-
-    res.status(500).json({
-
-      message:
-      error.message
-
-    });
-
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
-
 };
