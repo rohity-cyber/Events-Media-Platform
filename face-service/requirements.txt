@@ -2,7 +2,7 @@ flask
 deepface==0.0.93
 requests
 gunicorn
-gevent          ← add this
+gevent
 tf-keras
 opencv-python-headless
 numpy

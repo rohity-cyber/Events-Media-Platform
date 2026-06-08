@@ -1,3 +1,21 @@
+const axios = require("axios");
+const User = require("../models/User");
+const Media = require("../models/Media");
+
+exports.uploadReferenceSelfie = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    user.referenceSelfie = req.file.path;
+    await user.save();
+    res.json({
+      message: "Reference selfie uploaded",
+      path: req.file.path
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 exports.findMatchingPhotos = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
@@ -17,16 +35,13 @@ exports.findMatchingPhotos = async (req, res) => {
             referenceImage: user.referenceSelfie,
             targetImage: photo.filePath,
           },
-          {
-            timeout: 60000  // ✅ reduced from 120s — fail faster
-          }
+          { timeout: 60000 }
         );
 
         if (response.data.match) {
           matches.push(photo);
         }
 
-        // ✅ small delay between requests so gunicorn isn't hammered
         await new Promise(r => setTimeout(r, 200));
 
       } catch (error) {
