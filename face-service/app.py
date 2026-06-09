@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 import requests
 import tempfile
+import onnxruntime as ort
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from PIL import Image
@@ -10,33 +11,37 @@ from PIL import Image
 app = Flask(__name__)
 CORS(app)
 
-MODEL_PATH = "/opt/render/.deepface/weights/face_recognition_sface_2021dec.onnx"
-DETECTOR_PATH = "/opt/render/.deepface/weights/face_detection_yunet_2023mar.onnx"
-MODEL_URL = "https://github.com/opencv/opencv_zoo/raw/main/models/face_recognition_sface/face_recognition_sface_2021dec.onnx"
-DETECTOR_URL = "https://huggingface.co/opencv/face_detection_yunet/resolve/main/face_detection_yunet_2023mar.onnx"
+SFACE_PATH = "/opt/render/.deepface/weights/face_recognition_sface_2021dec.onnx"
+YUNET_PATH = "/opt/render/.deepface/weights/face_detection_yunet_2023mar.onnx"
+SFACE_URL = "https://github.com/opencv/opencv_zoo/raw/main/models/face_recognition_sface/face_recognition_sface_2021dec.onnx"
+YUNET_URL = "https://huggingface.co/opencv/face_detection_yunet/resolve/main/face_detection_yunet_2023mar.onnx"
 
-recognizer = None
 detector = None
+ort_session = None
 
 
 def download_model(url, path):
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    if not os.path.exists(path):
+    if not os.path.exists(path) or os.path.getsize(path) < 1000:
         print(f"Downloading {os.path.basename(path)}...")
         r = requests.get(url, timeout=60)
         r.raise_for_status()
         with open(path, "wb") as f:
             f.write(r.content)
-        print(f"Downloaded {os.path.basename(path)}")
+        print(f"Downloaded {os.path.basename(path)} ({os.path.getsize(path)} bytes)")
 
 
 def load_models():
-    global recognizer, detector
-    download_model(MODEL_URL, MODEL_PATH)
-    download_model(DETECTOR_URL, DETECTOR_PATH)
-    recognizer = cv2.FaceRecognizerSF.create(MODEL_PATH, "")
-    detector = cv2.FaceDetectorYN.create(DETECTOR_PATH, "", (320, 320))
-    print("Models ready")
+    global detector, ort_session
+    download_model(SFACE_URL, SFACE_PATH)
+    download_model(YUNET_URL, YUNET_PATH)
+
+    # Use onnxruntime directly — avoids cv2.FaceRecognizerSF gevent bug in 4.13
+    ort_session = ort.InferenceSession(SFACE_PATH, providers=["CPUExecutionProvider"])
+    print("SFace ONNX session ready, inputs:", [i.name for i in ort_session.get_inputs()])
+
+    detector = cv2.FaceDetectorYN.create(YUNET_PATH, "", (320, 320))
+    print("YuNet detector ready")
 
 
 load_models()
@@ -51,20 +56,18 @@ def download_image(url):
     return tmp.name
 
 
-def read_image(image_path):
-    """Read image reliably, handling formats cv2 struggles with."""
-    img = cv2.imread(image_path)
+def read_image(path):
+    img = cv2.imread(path)
     if img is None:
-        pil = Image.open(image_path).convert("RGB")
+        pil = Image.open(path).convert("RGB")
         img = cv2.cvtColor(np.array(pil), cv2.COLOR_RGB2BGR)
     return img
 
 
-def get_face_embedding(image_path):
+def get_embedding(image_path):
     img = read_image(image_path)
     h, w = img.shape[:2]
 
-    # YuNet needs minimum 64x64
     if h < 64 or w < 64:
         img = cv2.resize(img, (320, 320))
         h, w = 320, 320
@@ -72,20 +75,31 @@ def get_face_embedding(image_path):
     detector.setInputSize((w, h))
     _, faces = detector.detect(img)
 
-    if faces is None or len(faces) == 0:
-        # No face detected — resize to exactly 112x112 and use as-is
-        # SFace feature() accepts a raw 112x112 BGR crop directly
-        face_crop = cv2.resize(img, (112, 112))
-        embedding = recognizer.feature(face_crop)
-        return embedding
+    if faces is not None and len(faces) > 0:
+        best = max(faces, key=lambda x: x[-1])
+        x, y, fw, fh = int(best[0]), int(best[1]), int(best[2]), int(best[3])
+        x, y = max(0, x), max(0, y)
+        face_crop = img[y:y+fh, x:x+fw]
+        if face_crop.size == 0:
+            face_crop = img
+    else:
+        face_crop = img
 
-    # Use highest confidence face
-    best_face = max(faces, key=lambda x: x[-1])
+    # Preprocess for SFace: resize to 112x112, normalize to [-1, 1]
+    face_resized = cv2.resize(face_crop, (112, 112))
+    face_rgb = cv2.cvtColor(face_resized, cv2.COLOR_BGR2RGB)
+    face_norm = (face_rgb.astype(np.float32) - 127.5) / 127.5
+    face_input = np.transpose(face_norm, (2, 0, 1))[np.newaxis, :]  # NCHW
 
-    # alignCrop returns a 112x112 aligned face ready for feature()
-    aligned = recognizer.alignCrop(img, best_face)
-    embedding = recognizer.feature(aligned)
+    input_name = ort_session.get_inputs()[0].name
+    embedding = ort_session.run(None, {input_name: face_input})[0][0]
     return embedding
+
+
+def cosine_similarity(a, b):
+    a = a / (np.linalg.norm(a) + 1e-10)
+    b = b / (np.linalg.norm(b) + 1e-10)
+    return float(np.dot(a, b))
 
 
 @app.route("/health", methods=["GET"])
@@ -109,13 +123,13 @@ def match_faces():
         ref_file = download_image(reference_image)
         target_file = download_image(target_image)
 
-        emb1 = get_face_embedding(ref_file)
-        emb2 = get_face_embedding(target_file)
+        emb1 = get_embedding(ref_file)
+        emb2 = get_embedding(target_file)
 
-        score = recognizer.match(emb1, emb2, cv2.FaceRecognizerSF_FR_COSINE)
+        score = cosine_similarity(emb1, emb2)
         match = bool(score >= 0.30)
 
-        return jsonify({"match": match, "score": float(score)})
+        return jsonify({"match": match, "score": score})
 
     except Exception as e:
         return jsonify({"match": False, "error": str(e)}), 200
