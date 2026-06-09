@@ -1,16 +1,10 @@
 const express = require("express");
 
-const router =
-express.Router();
+const router = express.Router();
 
-const upload =
-require("../middleware/uploadMiddleware");
+const upload = require("../middleware/uploadMiddleware");
 
-const {
-  protect
-} = require(
-  "../middleware/authMiddleware"
-);
+const { protect, optionalAuth } = require("../middleware/authMiddleware");
 
 const {
   uploadMedia,
@@ -18,41 +12,22 @@ const {
   getMediaById,
   deleteMedia,
   updateVisibility
-} = require(
-  "../controllers/mediaController"
-);
+} = require("../controllers/mediaController");
 
-router.get(
-  "/",
-  getMedia
-);
+// optionalAuth: attaches req.user if token is present, but doesn't block if absent
+router.get("/", optionalAuth, getMedia);
 
-router.get(
-  "/:id",
-  getMediaById
-);
+router.get("/:id", optionalAuth, getMediaById);
 
 router.post(
   "/upload",
   protect,
-  upload.array(
-    "media",
-    20
-  ),
+  upload.array("media", 20),
   uploadMedia
 );
 
-router.delete(
-  "/:id",
-  protect,
-  deleteMedia
-);
+router.delete("/:id", protect, deleteMedia);
 
-router.patch(
-  "/:id/visibility",
-  protect,
-  updateVisibility
-);
+router.patch("/:id/visibility", protect, updateVisibility);
 
-module.exports =
-router;
+module.exports = router;

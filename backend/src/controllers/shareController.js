@@ -1,23 +1,23 @@
+const Media = require("../models/Media");
+
 exports.shareMedia =
-async(req,res)=>{
+async(req, res) => {
 
-  try{
+  try {
 
-    res.json({
+    const media = await Media.findById(req.params.id);
 
-      shareLink:
-      `http://localhost:5173/shared/${req.params.id}`
+    if (!media) {
+      return res.status(404).json({ message: "Media not found" });
+    }
 
-    });
+    const shareLink = `${process.env.FRONTEND_URL}/media/${media._id}`;
 
-  }catch(error){
+    res.json({ shareLink });
 
-    res.status(500).json({
+  } catch (error) {
 
-      message:
-      error.message
-
-    });
+    res.status(500).json({ message: error.message });
 
   }
 

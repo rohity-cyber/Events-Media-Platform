@@ -28,6 +28,10 @@ const eventSchema = new mongoose.Schema(
   createdBy:{
     type:mongoose.Schema.Types.ObjectId,
     ref:"User"
+  },
+  clubName: {
+    type: String,
+    default: "Event Media Platform"
   }
 },
 {
