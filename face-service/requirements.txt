@@ -1,6 +1,5 @@
 flask
 flask-cors
-deepface==0.0.93
 requests
 gunicorn
 gevent
