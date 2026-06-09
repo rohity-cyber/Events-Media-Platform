@@ -1,37 +1,46 @@
+import os
+os.environ["DEEPFACE_HOME"] = "/opt/render/.deepface"
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from deepface import DeepFace
 import requests
 import tempfile
-import os
 
 app = Flask(__name__)
+CORS(app)
 
-# ✅ FIX 3: Pre-warm the model at startup so it doesn't download mid-request
+
 def warmup():
     try:
-        DeepFace.build_model("Facenet512")
-        print("Facenet512 model warmed up successfully")
+        DeepFace.build_model("SFace")
+        print("SFace model ready")
     except Exception as e:
         print(f"Warmup warning: {e}")
 
-warmup()  # runs once when gunicorn boots the worker
+warmup()
 
-@app.route("/health", methods=["GET"])
-def health():
-    return jsonify({"status": "ok"})
 
 def download_image(url):
     response = requests.get(url, timeout=30)
-    response.raise_for_status()  # ✅ FIX: catch bad URLs early
+    response.raise_for_status()
     temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
     temp_file.write(response.content)
     temp_file.close()
     return temp_file.name
 
+
+@app.route("/health", methods=["GET"])
+def health():
+    return jsonify({"status": "ok"})
+
+
 @app.route("/match", methods=["POST"])
 def match_faces():
     reference_file = None
     target_file = None
+
     try:
         data = request.get_json()
         reference_image = data.get("referenceImage")
@@ -46,12 +55,14 @@ def match_faces():
         result = DeepFace.verify(
             img1_path=reference_file,
             img2_path=target_file,
-            model_name="Facenet512",
-            enforce_detection=False  # ✅ FIX 1: don't crash on hard-to-detect faces
+            model_name="SFace",
+            detector_backend="opencv",
+            enforce_detection=False,
+            distance_metric="cosine"
         )
 
         distance = float(result["distance"])
-        match = distance < 0.57
+        match = distance < 0.593
 
         return jsonify({"match": match, "distance": distance})
 
@@ -62,6 +73,7 @@ def match_faces():
         for f in [reference_file, target_file]:
             if f and os.path.exists(f):
                 os.remove(f)
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))

@@ -1,10 +1,9 @@
 flask
+flask-cors
 deepface==0.0.93
 requests
 gunicorn
 gevent
-tf-keras
-opencv-python-headless
+opencv-contrib-python-headless
 numpy
-pandas
 pillow
