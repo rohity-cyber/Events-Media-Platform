@@ -51,27 +51,40 @@ def download_image(url):
     return tmp.name
 
 
-def get_face_embedding(image_path):
+def read_image(image_path):
+    """Read image reliably, handling formats cv2 struggles with."""
     img = cv2.imread(image_path)
     if img is None:
-        # try via PIL for unusual formats
         pil = Image.open(image_path).convert("RGB")
         img = cv2.cvtColor(np.array(pil), cv2.COLOR_RGB2BGR)
+    return img
 
+
+def get_face_embedding(image_path):
+    img = read_image(image_path)
     h, w = img.shape[:2]
+
+    # YuNet needs minimum 64x64
+    if h < 64 or w < 64:
+        img = cv2.resize(img, (320, 320))
+        h, w = 320, 320
+
     detector.setInputSize((w, h))
     _, faces = detector.detect(img)
 
     if faces is None or len(faces) == 0:
-        # fallback: use whole image resized as face
-        face_img = cv2.resize(img, (112, 112))
-    else:
-        # use highest confidence face
-        faces = sorted(faces, key=lambda x: x[-1], reverse=True)
-        aligned = recognizer.alignCrop(img, faces[0])
-        face_img = aligned
+        # No face detected — resize to exactly 112x112 and use as-is
+        # SFace feature() accepts a raw 112x112 BGR crop directly
+        face_crop = cv2.resize(img, (112, 112))
+        embedding = recognizer.feature(face_crop)
+        return embedding
 
-    embedding = recognizer.feature(face_img)
+    # Use highest confidence face
+    best_face = max(faces, key=lambda x: x[-1])
+
+    # alignCrop returns a 112x112 aligned face ready for feature()
+    aligned = recognizer.alignCrop(img, best_face)
+    embedding = recognizer.feature(aligned)
     return embedding
 
 
@@ -100,8 +113,6 @@ def match_faces():
         emb2 = get_face_embedding(target_file)
 
         score = recognizer.match(emb1, emb2, cv2.FaceRecognizerSF_FR_COSINE)
-        # SFace cosine score: higher = more similar (opposite of distance)
-        # threshold from opencv docs: 0.363 for same person
         match = bool(score >= 0.30)
 
         return jsonify({"match": match, "score": float(score)})
