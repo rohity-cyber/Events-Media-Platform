@@ -10,376 +10,179 @@ import {
 } from "../services/likeService";
 
 export default function MediaModal({
-
   media,
   onClose
+}) {
 
-}){
+  const [comments, setComments] = useState([]);
+  const [text, setText] = useState("");
+  const [likes, setLikes] = useState(0);
 
-  const [comments,setComments] =
-  useState([]);
+  const token = localStorage.getItem("token");
 
-  const [text,setText] =
-  useState("");
-
-  const [likes,setLikes] =
-  useState(0);
-
-  const token =
-  localStorage.getItem(
-    "token"
-  );
-
-  const loadComments =
-  async()=>{
-
-    try{
-
-      const data =
-      await getComments(
-        media._id
-      );
-
+  const loadComments = async () => {
+    try {
+      const data = await getComments(media._id);
       setComments(data);
-
-    }catch(error){
-
+    } catch (error) {
       console.log(error);
-
     }
-
   };
 
-  useEffect(()=>{
-
-    if(media){
-
-      setLikes(
-        media.likes?.length || 0
-      );
-
+  useEffect(() => {
+    if (media) {
+      setLikes(media.likes?.length || 0);
       loadComments();
-
     }
+  }, [media]);
 
-  },[media]);
-
-  const handleComment =
-  async()=>{
-
-    if(!text.trim()){
-
-      return;
-
-    }
-
-    try{
-
-      await addComment(
-
-        media._id,
-        text,
-        token
-
-      );
-
+  const handleComment = async () => {
+    if (!text.trim()) return;
+    try {
+      await addComment(media._id, text, token);
       setText("");
-
       loadComments();
-
-    }catch(error){
-
+    } catch (error) {
       console.log(error);
-
     }
-
   };
 
-  const handleLike =
-  async()=>{
-
-    try{
-
-      const updated =
-      await toggleLike(
-
-        media._id,
-        token
-
-      );
-
-      setLikes(
-        updated.likes?.length || 0
-      );
-
-    }catch(error){
-
+  const handleLike = async () => {
+    try {
+      const updated = await toggleLike(media._id, token);
+      setLikes(updated.likes?.length || 0);
+    } catch (error) {
       console.log(error);
-
     }
-
   };
 
-  if(!media){
+  if (!media) return null;
 
-    return null;
-
-  }
-
-  return(
-
+  return (
     <div
       onClick={onClose}
       style={{
-        position:"fixed",
-        inset:0,
-        background:
-        "rgba(0,0,0,0.85)",
-        zIndex:9999,
-        display:"flex",
-        alignItems:"center",
-        justifyContent:"center",
-        padding:"30px"
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.85)",
+        zIndex: 9999,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "30px"
       }}
     >
-
       <div
-        onClick={(e)=>
-          e.stopPropagation()
-        }
+        onClick={(e) => e.stopPropagation()}
         style={{
-          width:"100%",
-          maxWidth:"1200px",
-          maxHeight:"90vh",
-          overflow:"hidden",
-          background:"#0f172a",
-          border:
-          "1px solid rgba(255,255,255,0.08)",
-          borderRadius:"20px",
-          display:"grid",
-          gridTemplateColumns:
-          "1.3fr 0.7fr"
+          width: "100%",
+          maxWidth: "1200px",
+          maxHeight: "90vh",
+          overflow: "hidden",
+          background: "#0f172a",
+          border: "1px solid rgba(255,255,255,0.08)",
+          borderRadius: "20px",
+          display: "grid",
+          gridTemplateColumns: "1.3fr 0.7fr"
         }}
       >
 
-        <div
-          style={{
-            background:"#000"
-          }}
-        >
-
-          {
-
-            media.mediaType ===
-            "image"
-
-            ?
-
+        {/* Left — media */}
+        <div style={{ background: "#000" }}>
+          {media.mediaType === "image" ? (
             <img
               src={media.filePath}
               alt=""
-              style={{
-                width:"100%",
-                height:"100%",
-                objectFit:"contain",
-                maxHeight:"90vh"
-              }}
+              style={{ width: "100%", height: "100%", objectFit: "contain", maxHeight: "90vh" }}
             />
-
-            :
-
-            <video
-              controls
-              style={{
-                width:"100%",
-                height:"100%"
-              }}
-            >
-              <source
-                src={media.filePath}
-              />
+          ) : (
+            <video controls style={{ width: "100%", height: "100%" }}>
+              <source src={media.filePath} />
             </video>
-
-          }
-
+          )}
         </div>
 
+        {/* Right — info panel */}
         <div
           style={{
-            display:"flex",
-            flexDirection:"column",
-            padding:"24px",
-            overflowY:"auto"
+            display: "flex",
+            flexDirection: "column",
+            padding: "24px",
+            overflowY: "auto"
           }}
         >
 
-          <div
-            style={{
-              display:"flex",
-              justifyContent:"space-between",
-              alignItems:"center",
-              marginBottom:"15px"
-            }}
-          >
-
-            <h2
-              style={{
-                margin:0
-              }}
-            >
-              {media.fileName}
-            </h2>
-
+          {/* Header */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" }}>
+            <h2 style={{ margin: 0 }}>{media.fileName}</h2>
             <button
               onClick={onClose}
-              style={{
-                background:"transparent",
-                color:"#94a3b8",
-                border:"none",
-                cursor:"pointer",
-                fontSize:"20px"
-              }}
+              style={{ background: "transparent", color: "#94a3b8", border: "none", cursor: "pointer", fontSize: "20px" }}
             >
               ✕
             </button>
-
           </div>
 
-          <p>
-            <strong>Event:</strong>
-            {" "}
-            {media.event?.name}
-          </p>
+          <p><strong>Event:</strong> {media.event?.name}</p>
 
-          <p>
-            <strong>Uploaded By:</strong>
-            {" "}
-            {media.uploader?.name}
-          </p>
+          <p><strong>Uploaded By:</strong> {media.uploader?.name}</p>
 
-          <div
-            style={{
-              display:"flex",
-              gap:"10px",
-              marginBottom:"20px"
-            }}
-          >
+          {/* Tags */}
+          {media.tags?.length > 0 && (
+            <div style={{ marginBottom: "16px" }}>
+              <strong style={{ fontSize: "13px", color: "#94a3b8" }}>Tags</strong>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "8px" }}>
+                {media.tags.map(tag => (
+                  <span
+                    key={tag}
+                    style={{ background: "rgba(245,158,11,0.12)", border: "1px solid rgba(245,158,11,0.25)", color: "#f59e0b", fontSize: "11px", fontWeight: 500, padding: "3px 10px", borderRadius: "20px" }}
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
 
+          {/* Like */}
+          <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
             <button
               onClick={handleLike}
-              style={{
-                background:"#2563eb",
-                color:"white",
-                border:"none",
-                padding:"10px 14px",
-                borderRadius:"10px",
-                cursor:"pointer"
-              }}
+              style={{ background: "#2563eb", color: "white", border: "none", padding: "10px 14px", borderRadius: "10px", cursor: "pointer" }}
             >
               👍 Like
             </button>
-
-            <div
-              style={{
-                display:"flex",
-                alignItems:"center",
-                color:"#94a3b8"
-              }}
-            >
+            <div style={{ display: "flex", alignItems: "center", color: "#94a3b8" }}>
               {likes} Likes
             </div>
-
           </div>
 
-          <hr
-            style={{
-              borderColor:"#1e293b"
-            }}
-          />
+          <hr style={{ borderColor: "#1e293b" }} />
 
-          <h3>
-            Comments
-          </h3>
+          <h3>Comments</h3>
 
-          <div
-            style={{
-              flex:1,
-              overflowY:"auto",
-              marginBottom:"20px"
-            }}
-          >
-
-            {
-
-              comments.map(
-                comment=>(
-
-                  <div
-                    key={comment._id}
-                    style={{
-                      marginBottom:"14px",
-                      paddingBottom:"10px",
-                      borderBottom:
-                      "1px solid #1e293b"
-                    }}
-                  >
-
-                    <strong>
-                      {
-                        comment.user?.name
-                      }
-                    </strong>
-
-                    <p>
-                      {
-                        comment.text
-                      }
-                    </p>
-
-                  </div>
-
-                )
-              )
-
-            }
-
+          <div style={{ flex: 1, overflowY: "auto", marginBottom: "20px" }}>
+            {comments.map(comment => (
+              <div
+                key={comment._id}
+                style={{ marginBottom: "14px", paddingBottom: "10px", borderBottom: "1px solid #1e293b" }}
+              >
+                <strong>{comment.user?.name}</strong>
+                <p>{comment.text}</p>
+              </div>
+            ))}
           </div>
 
           <textarea
             value={text}
-            onChange={(e)=>
-              setText(
-                e.target.value
-              )
-            }
-            placeholder=
-            "Write a comment..."
-            style={{
-              width:"100%",
-              minHeight:"90px",
-              borderRadius:"10px",
-              padding:"12px",
-              background:"#111827",
-              color:"white",
-              border:
-              "1px solid #334155"
-            }}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="Write a comment..."
+            style={{ width: "100%", minHeight: "90px", borderRadius: "10px", padding: "12px", background: "#111827", color: "white", border: "1px solid #334155" }}
           />
 
           <button
-            onClick={
-              handleComment
-            }
-            style={{
-              marginTop:"10px",
-              width:"100%",
-              background:"#2563eb",
-              border:"none",
-              color:"white",
-              padding:"12px",
-              borderRadius:"10px",
-              cursor:"pointer"
-            }}
+            onClick={handleComment}
+            style={{ marginTop: "10px", width: "100%", background: "#2563eb", border: "none", color: "white", padding: "12px", borderRadius: "10px", cursor: "pointer" }}
           >
             Add Comment
           </button>
@@ -388,25 +191,13 @@ export default function MediaModal({
             href={`${import.meta.env.VITE_API_URL}/download/${media._id}`}
             target="_blank"
             rel="noreferrer"
-            style={{
-              marginTop:"12px",
-              textAlign:"center",
-              background:"#16a34a",
-              color:"white",
-              textDecoration:"none",
-              padding:"12px",
-              borderRadius:"10px"
-            }}
+            style={{ marginTop: "12px", textAlign: "center", background: "#16a34a", color: "white", textDecoration: "none", padding: "12px", borderRadius: "10px" }}
           >
             Download Media
           </a>
 
         </div>
-
       </div>
-
     </div>
-
   );
-
 }

@@ -28,6 +28,17 @@ export default function MediaCard({ item }) {
         <h3 style={{ margin: 0, fontSize: "14px", fontWeight: 500, color: "#e2e8f0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.01em" }}>
           {item.fileName}
         </h3>
+
+        {/* Tags */}
+        {item.tags?.length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "5px", marginTop: "10px" }}>
+            {item.tags.slice(0, 4).map(tag => (
+              <span key={tag} style={{ background: "rgba(245,158,11,0.12)", border: "1px solid rgba(245,158,11,0.25)", color: "#f59e0b", fontSize: "10px", fontWeight: 500, padding: "2px 8px", borderRadius: "20px" }}>
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
