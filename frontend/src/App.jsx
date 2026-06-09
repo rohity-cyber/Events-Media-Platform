@@ -1,7 +1,8 @@
 import {
   BrowserRouter,
   Routes,
-  Route
+  Route,
+  Navigate
 } from "react-router-dom";
 
 import Login from "./pages/Login";
@@ -30,18 +31,21 @@ import Moderation from "./pages/Moderation";
 
 import AccessDenied from "./pages/AccessDenied";
 
-import SharedMedia
-from "./pages/SharedMedia";
+import SharedMedia from "./pages/SharedMedia";
 
-import ProtectedRoute
-from "./components/ProtectedRoute";
+import ProtectedRoute from "./components/ProtectedRoute";
+import RoleRoute from "./components/RoleRoute";
 
-import RoleRoute
-from "./components/RoleRoute";
+// If user is already logged in, redirect away from login/register pages
+function PublicRoute({ children }) {
+  const token = localStorage.getItem("token");
+  if (token) return <Navigate to="/dashboard" replace />;
+  return children;
+}
 
-function App(){
+function App() {
 
-  return(
+  return (
 
     <BrowserRouter>
 
@@ -49,16 +53,29 @@ function App(){
 
         <Route
           path="/"
-          element={<Login />}
+          element={
+            <PublicRoute>
+              <Login />
+            </PublicRoute>
+          }
         />
 
         <Route
           path="/register"
-          element={<Register />}
+          element={
+            <PublicRoute>
+              <Register />
+            </PublicRoute>
+          }
         />
 
         <Route
           path="/shared/:id"
+          element={<SharedMedia />}
+        />
+
+        <Route
+          path="/media/:id"
           element={<SharedMedia />}
         />
 
@@ -83,12 +100,7 @@ function App(){
         <Route
           path="/events"
           element={
-            <RoleRoute
-              roles={[
-                "admin",
-                "photographer"
-              ]}
-            >
+            <RoleRoute roles={["admin", "photographer"]}>
               <Events />
             </RoleRoute>
           }
@@ -97,12 +109,7 @@ function App(){
         <Route
           path="/albums"
           element={
-            <RoleRoute
-              roles={[
-                "admin",
-                "photographer"
-              ]}
-            >
+            <RoleRoute roles={["admin", "photographer"]}>
               <Albums />
             </RoleRoute>
           }
@@ -111,12 +118,7 @@ function App(){
         <Route
           path="/upload"
           element={
-            <RoleRoute
-              roles={[
-                "admin",
-                "photographer"
-              ]}
-            >
+            <RoleRoute roles={["admin", "photographer"]}>
               <MediaUpload />
             </RoleRoute>
           }
@@ -152,11 +154,7 @@ function App(){
         <Route
           path="/activity"
           element={
-            <RoleRoute
-              roles={[
-                "admin"
-              ]}
-            >
+            <RoleRoute roles={["admin"]}>
               <ActivityFeed />
             </RoleRoute>
           }
@@ -192,11 +190,7 @@ function App(){
         <Route
           path="/admin-users"
           element={
-            <RoleRoute
-              roles={[
-                "admin"
-              ]}
-            >
+            <RoleRoute roles={["admin"]}>
               <AdminUsers />
             </RoleRoute>
           }
@@ -205,11 +199,7 @@ function App(){
         <Route
           path="/moderation"
           element={
-            <RoleRoute
-              roles={[
-                "admin"
-              ]}
-            >
+            <RoleRoute roles={["admin"]}>
               <Moderation />
             </RoleRoute>
           }
