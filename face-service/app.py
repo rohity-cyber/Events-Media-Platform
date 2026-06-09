@@ -35,13 +35,9 @@ def load_models():
     global detector, ort_session
     download_model(SFACE_URL, SFACE_PATH)
     download_model(YUNET_URL, YUNET_PATH)
-
-    # Use onnxruntime directly — avoids cv2.FaceRecognizerSF gevent bug in 4.13
     ort_session = ort.InferenceSession(SFACE_PATH, providers=["CPUExecutionProvider"])
-    print("SFace ONNX session ready, inputs:", [i.name for i in ort_session.get_inputs()])
-
     detector = cv2.FaceDetectorYN.create(YUNET_PATH, "", (320, 320))
-    print("YuNet detector ready")
+    print("Models ready")
 
 
 load_models()
@@ -85,11 +81,10 @@ def get_embedding(image_path):
     else:
         face_crop = img
 
-    # Preprocess for SFace: resize to 112x112, normalize to [-1, 1]
     face_resized = cv2.resize(face_crop, (112, 112))
     face_rgb = cv2.cvtColor(face_resized, cv2.COLOR_BGR2RGB)
     face_norm = (face_rgb.astype(np.float32) - 127.5) / 127.5
-    face_input = np.transpose(face_norm, (2, 0, 1))[np.newaxis, :]  # NCHW
+    face_input = np.transpose(face_norm, (2, 0, 1))[np.newaxis, :]
 
     input_name = ort_session.get_inputs()[0].name
     embedding = ort_session.run(None, {input_name: face_input})[0][0]
