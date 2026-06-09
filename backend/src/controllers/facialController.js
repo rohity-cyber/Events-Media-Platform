@@ -36,7 +36,8 @@ exports.findMatchingPhotos = async (req, res) => {
         const form = new FormData();
         form.append("api_key", FACEPP_API_KEY);
         form.append("api_secret", FACEPP_API_SECRET);
-        form.append("image_url1", user.referenceSelfie);
+        const resizedSelfie = user.referenceSelfie.replace("/upload/", "/upload/w_600,h_600,c_limit,q_80/");
+        form.append("image_url1", resizedSelfie);
         form.append("image_url2", photo.filePath);
 
         const response = await axios.post(FACEPP_COMPARE_URL, form, {
@@ -51,7 +52,7 @@ exports.findMatchingPhotos = async (req, res) => {
 
         if (match) matches.push(photo);
 
-        await new Promise((r) => setTimeout(r, 300)); // stay within rate limits
+        await new Promise((r) => setTimeout(r, 1000)); // stay within rate limits
 
       } catch (err) {
         // Face++ returns 400 if no face detected — not a crash, just skip
