@@ -13,7 +13,7 @@ CORS(app)
 MODEL_PATH = "/opt/render/.deepface/weights/face_recognition_sface_2021dec.onnx"
 DETECTOR_PATH = "/opt/render/.deepface/weights/face_detection_yunet_2023mar.onnx"
 MODEL_URL = "https://github.com/opencv/opencv_zoo/raw/main/models/face_recognition_sface/face_recognition_sface_2021dec.onnx"
-DETECTOR_URL = "https://github.com/opencv/opencv_zoo/raw/main/models/face_detection_yunet/face_detection_yunet_2023mar.onnx"
+DETECTOR_URL = "https://huggingface.co/opencv/face_detection_yunet/resolve/main/face_detection_yunet_2023mar.onnx"
 
 recognizer = None
 detector = None
