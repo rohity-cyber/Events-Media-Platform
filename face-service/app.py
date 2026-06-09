@@ -102,7 +102,7 @@ def match_faces():
         score = recognizer.match(emb1, emb2, cv2.FaceRecognizerSF_FR_COSINE)
         # SFace cosine score: higher = more similar (opposite of distance)
         # threshold from opencv docs: 0.363 for same person
-        match = bool(score >= 0.363)
+        match = bool(score >= 0.30)
 
         return jsonify({"match": match, "score": float(score)})
 

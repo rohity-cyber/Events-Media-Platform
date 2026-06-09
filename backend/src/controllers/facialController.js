@@ -7,10 +7,7 @@ exports.uploadReferenceSelfie = async (req, res) => {
     const user = await User.findById(req.user._id);
     user.referenceSelfie = req.file.path;
     await user.save();
-    res.json({
-      message: "Reference selfie uploaded",
-      path: req.file.path
-    });
+    res.json({ message: "Reference selfie uploaded", path: req.file.path });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -25,6 +22,8 @@ exports.findMatchingPhotos = async (req, res) => {
     }
 
     const media = await Media.find({ mediaType: "image" });
+    console.log(`Starting face search across ${media.length} photos`);
+
     const matches = [];
 
     for (const photo of media) {
@@ -38,17 +37,21 @@ exports.findMatchingPhotos = async (req, res) => {
           { timeout: 60000 }
         );
 
-        if (response.data.match) {
+        const { match, score, error } = response.data;
+        console.log(`Photo ${photo._id}: score=${score}, match=${match}, error=${error || "none"}`);
+
+        if (match) {
           matches.push(photo);
         }
 
-        await new Promise(r => setTimeout(r, 200));
+        await new Promise(r => setTimeout(r, 150));
 
       } catch (error) {
         console.log("Face Match Error:", photo._id, error.message);
       }
     }
 
+    console.log(`Search done. Found ${matches.length} matches out of ${media.length}`);
     res.json({ count: matches.length, matches });
 
   } catch (error) {
